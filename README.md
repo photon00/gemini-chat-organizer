@@ -36,30 +36,3 @@ If the extension doesn’t detect chats correctly (e.g., after a Gemini UI updat
 ## Privacy
 
 All data is stored locally in Chrome (`chrome.storage.local`). Nothing is sent to external servers.
-
-## Optional: Add Icons
-
-For a custom icon in the toolbar, add PNG files to the `icons/` folder:
-
-- `icon16.png` (16×16)
-- `icon48.png` (48×48)
-- `icon128.png` (128×128)
-
-Then add this to `manifest.json`:
-
-```json
-"action": {
-  "default_popup": "popup.html",
-  "default_icon": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-  "default_title": "Gemini Chat Organizer"
-},
-"icons": {
-  "16": "icons/icon16.png",
-  "48": "icons/icon48.png",
-  "128": "icons/icon128.png"
-}
-```
