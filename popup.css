@@ -1,0 +1,245 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 0;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+}
+
+.popup {
+  padding: 16px;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.subtitle {
+  color: #5f6368;
+  font-size: 12px;
+  margin: 0 0 16px 0;
+}
+
+.folder-list {
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: #f1f3f4;
+  border-radius: 6px;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding-right: 8px;
+  color: #9aa0a6;
+  user-select: none;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.folder-item.dragging {
+  opacity: 0.5;
+  background: #e8eaed;
+}
+
+.folder-item .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  outline: none;
+}
+
+.folder-item .name[contenteditable="true"] {
+  background: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid #4285f4;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.folder-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.folder-item button.delete,
+.folder-item button.edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #5f6368;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.folder-item button.delete:hover {
+  color: #ea4335;
+  opacity: 1;
+}
+.folder-item button.edit:hover {
+  color: #4285f4;
+  opacity: 1;
+}
+
+.add-folder {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.add-folder input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.add-folder input:focus {
+  outline: none;
+  border-color: #4285f4;
+}
+
+.add-folder button {
+  padding: 8px 16px;
+  background: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.add-folder button:hover {
+  background: #3367d6;
+}
+
+.hint {
+  font-size: 12px;
+  color: #5f6368;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #dadce0;
+  padding-top: 12px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 6px 12px;
+  background: white;
+  color: #5f6368;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: #f1f3f4;
+  color: #202124;
+}
+
+/* Chat Items within Folders */
+.folder-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px;
+}
+
+.folder-item {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.folder-item.collapsed {
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.folder-chats {
+  background: #f8f9fa;
+  border: 1px solid #f1f3f4;
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.folder-item.collapsed + .folder-chats {
+  display: none;
+}
+
+.chat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #3c4043;
+  border-radius: 4px;
+}
+
+.chat-item:hover {
+  background: #e8eaed;
+}
+
+.chat-item .chat-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+
+.chat-item .remove-chat {
+  background: none;
+  border: none;
+  color: #5f6368;
+  cursor: pointer;
+  opacity: 0;
+  padding: 2px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.chat-item:hover .remove-chat {
+  opacity: 0.7;
+}
+
+.chat-item .remove-chat:hover {
+  opacity: 1;
+  color: #ea4335;
+  background: rgba(234, 67, 53, 0.1);
+}

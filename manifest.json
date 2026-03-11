@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Chat Organizer",
+  "version": "1.0.0",
+  "description": "Organize your Gemini chats into folders, similar to ChatGPT's project-based organization",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://gemini.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Gemini Chat Organizer"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

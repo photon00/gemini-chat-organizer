@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini Chat Organizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <h1>📁 Chat Folders</h1>
+    <p class="subtitle">Organize your Gemini chats into folders</p>
+
+    <div class="folder-list" id="folderList"></div>
+
+    <div class="add-folder">
+      <input type="text" id="newFolderName" placeholder="New folder name" maxlength="50">
+      <button id="addFolderBtn">Add Folder</button>
+    </div>
+    <p class="hint">Click the 📁 icon next to a chat in Gemini to assign it to a folder.</p>
+
+    <div class="actions-row">
+      <button id="exportBtn" class="action-btn">Export</button>
+      <button id="importBtn" class="action-btn">Import</button>
+      <input type="file" id="importFile" accept=".json" style="display: none;">
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
