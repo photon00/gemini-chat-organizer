@@ -15,7 +15,7 @@ A Chrome extension that adds folder-based organization to [Gemini](https://gemin
 2. Open Chrome and go to `chrome://extensions`
 3. Enable **Developer mode** (top right)
 4. Click **Load unpacked**
-5. Select the `Gemini_organizer` folder
+5. Select the `gemini-chat-organizer` folder
 
 ## Usage
 
