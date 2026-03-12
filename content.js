@@ -20,15 +20,52 @@
   let currentFolderFilter = 'default';
   let chatItemWrappers = new Map(); // element -> wrapper div
 
+  // We will run a periodic ghost chat auditor to clean up deletions
+  setInterval(auditGhostChats, 1000);
+
+  async function auditGhostChats() {
+    // Collect all native Gemini chat URLs that currently exist in the DOM (including scrolled off-screen if cached)
+    const allLinks = document.querySelectorAll('a[href*="/app/"]');
+    if (allLinks.length === 0) return; // Wait until UI is fully initialized
+
+    const existingChatIds = new Set();
+    allLinks.forEach(link => {
+      const match = link.href.match(/\/app\/([a-zA-Z0-9_-]{10,})/);
+      if (match) existingChatIds.add(match[1]);
+    });
+
+    // Check our storage for any mapped chats that point to IDs that no longer exist
+    const { mappings } = await loadData();
+    let changed = false;
+
+    // We only audit if we have a healthy number of chats loaded to prevent accidental mass-deletion
+    if (existingChatIds.size > 5) {
+      Object.entries(mappings).forEach(([key, mapping]) => {
+        if (typeof mapping === 'object' && mapping.url) {
+          const match = mapping.url.match(/\/app\/([a-zA-Z0-9_-]{10,})/);
+          if (match && !existingChatIds.has(match[1])) {
+            delete mappings[key];
+            changed = true;
+          }
+        }
+      });
+    }
+
+    if (changed) {
+      await chrome.storage.local.set({ [STORAGE_KEYS.MAPPINGS]: mappings });
+      applyFolderFilter(currentFolderFilter);
+    }
+  }
+
   function getChatId(element) {
     const dataId = element.getAttribute('data-conversation-id') ||
       element.getAttribute('data-id') ||
       element.closest('[data-conversation-id]')?.getAttribute('data-conversation-id');
     if (dataId) return dataId;
 
-    let link = element.tagName && element.tagName.toLowerCase() === 'a' ? element : 
-               (element.querySelector('a[href*="/app/"]') || element.closest('a[href*="/app/"]') || element.querySelector('a[href*="gemini"]') || element.closest('a[href*="gemini"]'));
-    
+    let link = element.tagName && element.tagName.toLowerCase() === 'a' ? element :
+      (element.querySelector('a[href*="/app/"]') || element.closest('a[href*="/app/"]') || element.querySelector('a[href*="gemini"]') || element.closest('a[href*="gemini"]'));
+
     if (link?.href) {
       const urlMatch = link.href.match(/[\/=]([a-zA-Z0-9_-]{10,})/);
       if (urlMatch) return urlMatch[1];
@@ -47,7 +84,7 @@
   }
 
   function getChatTitle(element) {
-    const titleEl = element.querySelector('.conversation-title') || 
+    const titleEl = element.querySelector('.conversation-title') ||
       element.querySelector('[data-title]') ||
       element.querySelector('span[title]') ||
       element.querySelector('.chat-title, [class*="title"]') ||
@@ -173,7 +210,7 @@
       e.stopPropagation();
       e.preventDefault();
       const { folders, mappings } = await loadData();
-      
+
       const mapping = mappings[chatId] || mappings[chatTitle];
       let assignedFolder = 'default';
       if (typeof mapping === 'string') {
@@ -212,7 +249,7 @@
     chatElement.style.paddingLeft = '32px';
     chatElement.setAttribute('data-gco-processed', 'true');
     chatElement.setAttribute('data-gco-chat-id', chatId || '');
-    
+
     chatElement.appendChild(btn);
   }
 
@@ -224,91 +261,91 @@
   async function applyFolderFilter(folderId) {
     if (isApplyingFilter) return;
     isApplyingFilter = true;
-    
+
     try {
       currentFolderFilter = folderId;
-    const { mappings } = await loadData();
-    const items = findChatListItems(true);
-    
-    const visibleMappedUrls = new Set();
-    
-    items.forEach(el => {
-      const wrapper = el.closest('.conversation-items-container') || el.closest('li') || el.parentElement || el;
-      if (!wrapper?.style) return;
-      const chatId = el.getAttribute('data-gco-chat-id') || getChatId(el);
-      const title = getChatTitle(el);
-      const mapping = mappings[chatId] || mappings[title];
-      
-      let assignedFolder = 'default';
-      if (typeof mapping === 'string') {
-        assignedFolder = mapping;
-      } else if (mapping && mapping.folderId) {
-        assignedFolder = mapping.folderId;
-      }
+      const { mappings } = await loadData();
+      const items = findChatListItems(true);
 
-      const isMatch = folderId === 'default' || assignedFolder === folderId;
-      wrapper.style.display = isMatch ? '' : 'none';
-      
-      if (isMatch && typeof mapping === 'object' && mapping.url) {
-        visibleMappedUrls.add(mapping.url);
-      } else if (isMatch) {
-        const link = el.href || el.querySelector('a')?.href;
-        if (link) visibleMappedUrls.add(link);
-      }
-    });
+      const visibleMappedUrls = new Set();
 
-    // Handle "missing" chats that Gemini hasn't loaded into the DOM yet
-    const { container } = findChatListContainer() || {};
-    if (container) {
-      // Clean up any old missing chats container
-      const oldContainer = container.querySelector('.gco-missing-chats');
-      if (oldContainer) oldContainer.remove();
+      items.forEach(el => {
+        const wrapper = el.closest('.conversation-items-container') || el.closest('li') || el.parentElement || el;
+        if (!wrapper?.style) return;
+        const chatId = el.getAttribute('data-gco-chat-id') || getChatId(el);
+        const title = getChatTitle(el);
+        const mapping = mappings[chatId] || mappings[title];
 
-      if (folderId !== 'default') {
-        const missingChats = [];
-        
-        // Find all chats in storage mapped to this folder that aren't visible
-        Object.entries(mappings).forEach(([key, mapping]) => {
-          if (typeof mapping === 'object' && mapping.folderId === folderId && mapping.url) {
-            if (!visibleMappedUrls.has(mapping.url)) {
-              // Deduplicate in case saved under both text hash and chat ID
-              if (!missingChats.find(c => c.url === mapping.url)) {
-                missingChats.push(mapping);
+        let assignedFolder = 'default';
+        if (typeof mapping === 'string') {
+          assignedFolder = mapping;
+        } else if (mapping && mapping.folderId) {
+          assignedFolder = mapping.folderId;
+        }
+
+        const isMatch = folderId === 'default' || assignedFolder === folderId;
+        wrapper.style.display = isMatch ? '' : 'none';
+
+        if (isMatch && typeof mapping === 'object' && mapping.url) {
+          visibleMappedUrls.add(mapping.url);
+        } else if (isMatch) {
+          const link = el.href || el.querySelector('a')?.href;
+          if (link) visibleMappedUrls.add(link);
+        }
+      });
+
+      // Handle "missing" chats that Gemini hasn't loaded into the DOM yet
+      const { container } = findChatListContainer() || {};
+      if (container) {
+        // Clean up any old missing chats container
+        const oldContainer = container.querySelector('.gco-missing-chats');
+        if (oldContainer) oldContainer.remove();
+
+        if (folderId !== 'default') {
+          const missingChats = [];
+
+          // Find all chats in storage mapped to this folder that aren't visible
+          Object.entries(mappings).forEach(([key, mapping]) => {
+            if (typeof mapping === 'object' && mapping.folderId === folderId && mapping.url) {
+              if (!visibleMappedUrls.has(mapping.url)) {
+                // Deduplicate in case saved under both text hash and chat ID
+                if (!missingChats.find(c => c.url === mapping.url)) {
+                  missingChats.push(mapping);
+                }
               }
             }
-          }
-        });
-
-        if (missingChats.length > 0) {
-          const missingContainer = document.createElement('div');
-          missingContainer.className = 'gco-missing-chats';
-          
-          const label = document.createElement('div');
-          label.className = 'gco-missing-chats-title';
-          label.textContent = 'Archived visually (click to load)';
-          missingContainer.appendChild(label);
-
-          missingChats.forEach(chat => {
-            const link = document.createElement('a');
-            link.className = 'gco-missing-chat-link';
-            link.href = chat.url;
-            link.textContent = '📄 ' + (chat.title || 'Unknown Chat');
-            
-            // Force browser navigation to bypass SPA interceptors
-            link.addEventListener('click', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              window.location.href = chat.url;
-            });
-            
-            missingContainer.appendChild(link);
           });
 
-          // Append to the bottom of the Gemini chat list container
-          container.appendChild(missingContainer);
+          if (missingChats.length > 0) {
+            const missingContainer = document.createElement('div');
+            missingContainer.className = 'gco-missing-chats';
+
+            const label = document.createElement('div');
+            label.className = 'gco-missing-chats-title';
+            label.textContent = 'Archived visually (click to load)';
+            missingContainer.appendChild(label);
+
+            missingChats.forEach(chat => {
+              const link = document.createElement('a');
+              link.className = 'gco-missing-chat-link';
+              link.href = chat.url;
+              link.textContent = '📄 ' + (chat.title || 'Unknown Chat');
+
+              // Force browser navigation to bypass SPA interceptors
+              link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = chat.url;
+              });
+
+              missingContainer.appendChild(link);
+            });
+
+            // Append to the bottom of the Gemini chat list container
+            container.appendChild(missingContainer);
+          }
         }
       }
-    }
     } finally {
       setTimeout(() => { isApplyingFilter = false; }, 50);
     }
@@ -381,9 +418,9 @@
     applyFolderFilter(currentFolderFilter);
 
     // Observe for new chat items (Gemini loads dynamically)
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
       if (isApplyingFilter) return;
-      
+
       findChatListItems().forEach(item => {
         const chatId = getChatId(item);
         const title = getChatTitle(item);
@@ -396,7 +433,7 @@
 
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area === 'local' && (changes[STORAGE_KEYS.FOLDERS] || changes[STORAGE_KEYS.MAPPINGS])) {
-      
+
       const root = document.getElementById('gco-organizer-root');
       if (root) {
         // Just rebuild the tabs!
@@ -426,7 +463,7 @@
   async function scrollAllChats() {
     const listContainer = document.querySelector('infinite-scroller, [data-test-id="all-conversations"], .chat-history-list');
     let scrollEl = listContainer;
-    
+
     // Find the actual scrollable element
     while (scrollEl && scrollEl !== document.body) {
       if (getComputedStyle(scrollEl).overflowY.match(/(scroll|auto|overlay)/)) {
@@ -434,7 +471,7 @@
       }
       scrollEl = scrollEl.parentElement;
     }
-    
+
     if (!scrollEl) return;
 
     let previousHeight = 0;
@@ -443,17 +480,17 @@
     while (retries < 3) {
       const currentHeight = scrollEl.scrollHeight;
       scrollEl.scrollTo(0, currentHeight);
-      
+
       // Give Gemini's React/API time to fetch and render the next batch
-      await new Promise(r => setTimeout(r, 600)); 
-      
+      await new Promise(r => setTimeout(r, 600));
+
       if (scrollEl.scrollHeight > currentHeight) {
         retries = 0; // Reset retries if we actually grew
       } else {
         retries++;
       }
     }
-    
+
     // Scroll back to top after we are done
     scrollEl.scrollTo(0, 0);
   }
@@ -488,13 +525,13 @@
     }
 
     if (request.action === 'scrapeAllChats') {
-      
+
       scrollAllChats().then(() => {
         // Direct aggressive DOM scrape instead of just what is visible in `findChatListItems`
         const allLinks = Array.from(document.querySelectorAll('a[href*="/app/"]'));
         const scraped = [];
         const seenIds = new Set();
-  
+
         allLinks.forEach(el => {
           const urlMatch = el.href.match(/\/app\/([a-zA-Z0-9_-]{10,})/);
           if (urlMatch) {
@@ -502,14 +539,14 @@
             // Avoid duplicates
             if (seenIds.has(id)) return;
             seenIds.add(id);
-  
+
             const titleEl = el.querySelector('.conversation-title') || el.querySelector('[data-title]') || el;
             const title = (titleEl.textContent || titleEl.title || 'Untitled').trim().slice(0, 100);
-            
+
             scraped.push({ id, title, url: el.href });
           }
         });
-        
+
         sendResponse({ chats: scraped });
       });
       return true; // Keep message channel open for async response
